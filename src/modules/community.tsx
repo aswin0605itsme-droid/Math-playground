@@ -88,6 +88,11 @@ export const Community: React.FC<{ profile: UserProfile }> = ({ profile }) => {
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      if (data.type === 'banned') {
+        alert(`You have been banned from the chat. Reason: ${data.reason}`);
+        // Optionally redirect or disable chat input
+        setIsEnabled(false);
+      }
       if (data.type === 'chat' && data.channelId === activeChannel) {
         setMessages(prev => [...prev, data]);
       }

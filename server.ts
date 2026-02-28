@@ -175,6 +175,12 @@ db.exec(`
     difficulty TEXT,
     timestamp INTEGER
   );
+
+  CREATE TABLE IF NOT EXISTS banned_users (
+    userId TEXT PRIMARY KEY,
+    reason TEXT,
+    timestamp INTEGER
+  );
 `);
 
 // Migration: Add flagged column if it doesn't exist
@@ -365,26 +371,74 @@ async function startServer() {
       }
 
       if (message.type === "chat") {
-        const chatMsg = {
-          id: Math.random().toString(36).substr(2, 9),
-          channelId: message.channelId,
-          userId: message.userId,
-          userName: message.userName,
-          userRole: message.userRole || "Student",
-          streakCount: message.streakCount || 0,
-          content: cleanContent(message.content),
-          timestamp: Date.now(),
-          reactions: "[]"
-        };
+        const isBanned = db.prepare("SELECT * FROM banned_users WHERE userId = ?").get(message.userId);
+        if (isBanned) {
+          ws.send(JSON.stringify({ type: "banned", reason: (isBanned as any).reason }));
+          return;
+        }
 
-        const stmt = db.prepare(`
-          INSERT INTO messages (id, channelId, userId, userName, userRole, streakCount, content, timestamp)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        stmt.run(chatMsg.id, chatMsg.channelId, chatMsg.userId, chatMsg.userName, chatMsg.userRole, chatMsg.streakCount, chatMsg.content, chatMsg.timestamp);
+        (async () => {
+          try {
+            const { GoogleGenAI, Type } = await import("@google/genai");
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            
+            const response = await ai.models.generateContent({
+              model: "gemini-3-flash-preview",
+              contents: `Analyze the following chat message for vulgarity, profanity, or highly offensive content. 
+              Message: "${message.content}"
+              
+              Respond with ONLY a JSON object: {"isVulgar": true/false, "reason": "short reason"}`,
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    isVulgar: { type: Type.BOOLEAN },
+                    reason: { type: Type.STRING }
+                  }
+                }
+              }
+            });
+            
+            const result = JSON.parse(response.text);
+            
+            if (result.isVulgar) {
+              db.prepare("INSERT OR REPLACE INTO banned_users (userId, reason, timestamp) VALUES (?, ?, ?)")
+                .run(message.userId, result.reason, Date.now());
+              
+              ws.send(JSON.stringify({ type: "banned", reason: result.reason }));
+              
+              db.prepare("INSERT INTO vigil_intelligence (type, observation, action_taken, timestamp) VALUES (?, ?, ?, ?)")
+                .run('MODERATION', `User ${message.userId} used vulgar language: ${message.content}`, 'BANNED_USER', Date.now());
+              
+              return; // Do not broadcast
+            }
+          } catch (err) {
+            console.error("Gemini moderation error:", err);
+            // Fallback to basic filter if Gemini fails
+          }
 
-        logActivity(message.userId, message.userName, "CHAT", `Sent message in #${message.channelId}`);
-        broadcast({ type: "chat", ...chatMsg, reactions: [] });
+          const chatMsg = {
+            id: Math.random().toString(36).substr(2, 9),
+            channelId: message.channelId,
+            userId: message.userId,
+            userName: message.userName,
+            userRole: message.userRole || "Student",
+            streakCount: message.streakCount || 0,
+            content: cleanContent(message.content),
+            timestamp: Date.now(),
+            reactions: "[]"
+          };
+
+          const stmt = db.prepare(`
+            INSERT INTO messages (id, channelId, userId, userName, userRole, streakCount, content, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+          stmt.run(chatMsg.id, chatMsg.channelId, chatMsg.userId, chatMsg.userName, chatMsg.userRole, chatMsg.streakCount, chatMsg.content, chatMsg.timestamp);
+
+          logActivity(message.userId, message.userName, "CHAT", `Sent message in #${message.channelId}`);
+          broadcast({ type: "chat", ...chatMsg, reactions: [] });
+        })();
       }
 
       if (message.type === "reaction") {

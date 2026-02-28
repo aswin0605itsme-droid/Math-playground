@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { authService, UserProfile } from '../services/authService';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -43,9 +44,8 @@ interface ActiveUser {
   currentModule: string;
 }
 
-export const GuardianDashboard: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
+export const GuardianDashboard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(profile.role === 'admin');
   const [token, setToken] = useState(localStorage.getItem('guardian_token') || '');
   const [error, setError] = useState('');
   
@@ -86,27 +86,6 @@ export const GuardianDashboard: React.FC = () => {
     else setLoading(false);
   }, [token]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setToken(data.token);
-        localStorage.setItem('guardian_token', data.token);
-      } else {
-        setError(data.error);
-      }
-    } catch {
-      setError('Login failed');
-    }
-  };
-
   const handleToggle = async (key: string, currentValue: string) => {
     const newValue = currentValue === 'true' ? 'false' : 'true';
     try {
@@ -133,41 +112,12 @@ export const GuardianDashboard: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-950 p-4">
-        <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-8 shadow-2xl">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-4">
-              <Shield className="text-indigo-400" size={32} />
-            </div>
-            <h1 className="text-2xl font-bold text-white">The Vault</h1>
-            <p className="text-slate-500 text-sm mt-1">Guardian Access Required</p>
+        <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-8 shadow-2xl text-center">
+          <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+            <AlertTriangle className="text-red-400" size={32} />
           </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Master Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-800 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:border-indigo-500 outline-none transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-            {error && <p className="text-red-400 text-xs font-medium">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
-            >
-              Unlock Dashboard
-            </button>
-          </form>
-          
-          <p className="text-center text-[10px] text-slate-600 mt-8 uppercase tracking-tighter">
-            Secure Session • Encrypted End-to-End
-          </p>
+          <h1 className="text-2xl font-bold text-white">Access Denied</h1>
+          <p className="text-slate-500 text-sm mt-2">You do not have Guardian privileges.</p>
         </div>
       </div>
     );
@@ -497,9 +447,9 @@ export const GuardianDashboard: React.FC = () => {
   );
 };
 
-export function initGuardian(container: HTMLElement) {
+export function initGuardian(container: HTMLElement, profile: UserProfile) {
   const root = createRoot(container);
-  root.render(<GuardianDashboard />);
+  root.render(<GuardianDashboard profile={profile} />);
   return {
     unmount: () => root.unmount()
   };

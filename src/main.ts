@@ -3,6 +3,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { SettingsManager } from './utils/settings';
 import { VigilStreak } from './components/VigilStreak';
+import { Login } from './components/Login';
+import { authService, UserProfile } from './services/authService';
 
 // SVG Icons
 const icons = {
@@ -18,7 +20,8 @@ const icons = {
   settings: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
   undo: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>`,
   redo: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-redo-2"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/></svg>`,
-  close: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`
+  close: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+  logout: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`
 };
 
 // Module Interface
@@ -39,21 +42,20 @@ interface Module {
 const settingsManager = new SettingsManager();
 let currentModuleId = settingsManager.get('lastModule') || 'fractal';
 let activeModule: ModuleInstance | null = null;
+let currentUser: UserProfile | null = null;
 
 // Global WebSocket for tracking
 let globalWs: WebSocket | null = null;
-const USER_ID = 'me'; // In a real app, this would be from auth
-const USER_NAME = 'You';
 
 function setupGlobalWs() {
+  if (!currentUser) return;
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   globalWs = new WebSocket(`${protocol}//${window.location.host}`);
   globalWs.onopen = () => {
-    globalWs?.send(JSON.stringify({ type: 'join', userId: USER_ID, userName: USER_NAME }));
+    globalWs?.send(JSON.stringify({ type: 'join', userId: currentUser?.uid, userName: currentUser?.displayName }));
     globalWs?.send(JSON.stringify({ type: 'navigate', module: currentModuleId }));
   };
 }
-setupGlobalWs();
 
 // DOM Elements
 const app = document.getElementById('app')!;
@@ -88,6 +90,9 @@ header.innerHTML = `
     <div class="w-px h-6 bg-white/10 mx-2"></div>
     <button id="settingsBtn" class="p-2 text-slate-400 hover:text-white transition-colors" title="Settings">
       ${icons.settings}
+    </button>
+    <button id="logoutBtn" class="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Logout">
+      ${icons.logout}
     </button>
   </div>
 `;
@@ -294,7 +299,7 @@ const modules: Record<string, Module> = {
     icon: icons.community,
     mount: async (container) => {
       const { initCommunity } = await import('./modules/community');
-      return initCommunity(container);
+      return initCommunity(container, currentUser!);
     }
   },
   guardian: {
@@ -303,7 +308,7 @@ const modules: Record<string, Module> = {
     icon: icons.guardian,
     mount: async (container) => {
       const { initGuardian } = await import('./modules/guardian');
-      return initGuardian(container);
+      return initGuardian(container, currentUser!);
     }
   },
   architect: {
@@ -357,7 +362,9 @@ function renderNav() {
   nav.appendChild(logo);
 
   Object.values(modules).forEach(mod => {
-    if (mod.id === 'architect') return; // Hide architect from sidebar
+    if (mod.id === 'architect' && currentUser?.role !== 'admin') return; 
+    if (mod.id === 'guardian' && currentUser?.role !== 'admin') return;
+    
     const btn = document.createElement('button');
     const isActive = mod.id === currentModuleId;
     
@@ -433,7 +440,13 @@ async function switchModule(id: string) {
 }
 
 // Initial Render
-function startApp() {
+function startApp(profile: UserProfile) {
+  currentUser = profile;
+  app.innerHTML = '';
+  app.appendChild(nav);
+  app.appendChild(main);
+  
+  setupGlobalWs();
   renderNav();
   switchModule(currentModuleId);
   
@@ -450,22 +463,46 @@ function startApp() {
     };
   }
 
+  // Logout Logic
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+      await authService.logout();
+      window.location.reload();
+    };
+  }
+
   // Mount React components
   const streakRoot = document.getElementById('streak-root');
   if (streakRoot) {
-    createRoot(streakRoot).render(React.createElement(VigilStreak));
+    createRoot(streakRoot).render(React.createElement(VigilStreak, { userId: profile.uid }));
   }
 }
 
-// Check if we should show intro
-const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
-if (!hasSeenIntro) {
-  import('./modules/intro').then(({ initIntro }) => {
-    initIntro(() => {
-      sessionStorage.setItem('hasSeenIntro', 'true');
-      startApp();
-    });
-  });
-} else {
-  startApp();
-}
+// Auth Observer
+authService.onAuthChange((profile) => {
+  if (profile) {
+    // Check if we should show intro
+    const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
+    if (!hasSeenIntro) {
+      import('./modules/intro').then(({ initIntro }) => {
+        initIntro(() => {
+          sessionStorage.setItem('hasSeenIntro', 'true');
+          startApp(profile);
+        });
+      });
+    } else {
+      startApp(profile);
+    }
+  } else {
+    // Show Login
+    app.innerHTML = '';
+    const loginRoot = document.createElement('div');
+    loginRoot.id = 'login-root';
+    loginRoot.className = 'w-full h-full';
+    app.appendChild(loginRoot);
+    createRoot(loginRoot).render(React.createElement(Login, { 
+      onSuccess: (p) => startApp(p) 
+    }));
+  }
+});

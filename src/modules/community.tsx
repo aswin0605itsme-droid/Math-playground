@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { authService, UserProfile } from '../services/authService';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -44,19 +45,18 @@ const MOCK_USERS: User[] = [
   { id: '3', name: 'Jordan Smith', role: 'Student', status: 'offline', streak: 2, badges: [] },
 ];
 
-export const Community: React.FC = () => {
+export const Community: React.FC<{ profile: UserProfile }> = ({ profile }) => {
   const [activeChannel, setActiveChannel] = useState(CHANNELS[0].id);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [currentUser] = useState({ id: 'me', name: 'You', role: 'Student' as const });
   const [isEnabled, setIsEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const ws = useRef<WebSocket | null>(null);
 
   // Get current streak from localStorage
   const getStreak = () => {
-    const saved = localStorage.getItem('vigil_streak_data');
+    const saved = localStorage.getItem(`vigil_streak_data_${profile.uid}`);
     return saved ? JSON.parse(saved).count : 0;
   };
 
@@ -81,8 +81,8 @@ export const Community: React.FC = () => {
     ws.current.onopen = () => {
       ws.current?.send(JSON.stringify({
         type: 'join',
-        userId: currentUser.id,
-        userName: currentUser.name
+        userId: profile.uid,
+        userName: profile.displayName || 'Anonymous'
       }));
     };
 
@@ -97,7 +97,7 @@ export const Community: React.FC = () => {
     };
 
     return () => ws.current?.close();
-  }, [activeChannel]);
+  }, [activeChannel, profile.uid, profile.displayName]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -112,9 +112,9 @@ export const Community: React.FC = () => {
     ws.current?.send(JSON.stringify({
       type: 'chat',
       channelId: activeChannel,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
+      userId: profile.uid,
+      userName: profile.displayName || 'Anonymous',
+      userRole: profile.role === 'admin' ? 'Admin' : 'Student',
       streakCount: getStreak(),
       content: inputText
     }));
@@ -178,8 +178,8 @@ export const Community: React.FC = () => {
         <div className="p-4 bg-slate-900/80 border-t border-white/10 flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-slate-700 border border-white/10" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate">{currentUser.name}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">#0001</p>
+            <p className="text-sm font-bold text-white truncate">{profile.displayName || 'Anonymous'}</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">#{profile.uid.slice(-4)}</p>
           </div>
           <div className="flex items-center gap-1 text-orange-400">
             <Flame size={14} fill="currentColor" />
@@ -328,9 +328,9 @@ export const Community: React.FC = () => {
   );
 };
 
-export function initCommunity(container: HTMLElement) {
+export function initCommunity(container: HTMLElement, profile: UserProfile) {
   const root = createRoot(container);
-  root.render(<Community />);
+  root.render(<Community profile={profile} />);
   return {
     unmount: () => root.unmount()
   };

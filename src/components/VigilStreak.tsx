@@ -28,9 +28,9 @@ const SFX = {
   FANFARE: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3', // Fanfare
 };
 
-export const VigilStreak: React.FC = () => {
+export const VigilStreak: React.FC<{ userId: string }> = ({ userId }) => {
   const [streak, setStreak] = useState<StreakData>(() => {
-    const saved = localStorage.getItem(STREAK_KEY);
+    const saved = localStorage.getItem(`${STREAK_KEY}_${userId}`);
     if (saved) {
       const parsed = JSON.parse(saved) as StreakData;
       const now = Date.now();
@@ -50,16 +50,16 @@ export const VigilStreak: React.FC = () => {
 
   // Sync with server on mount
   useEffect(() => {
-    fetch('/api/user/streak/me')
+    fetch(`/api/user/streak/${userId}`)
       .then(res => res.json())
       .then(serverStreak => {
         if (serverStreak && serverStreak.count > streak.count) {
           setStreak({ count: serverStreak.count, lastTimestamp: serverStreak.lastTimestamp });
-          localStorage.setItem(STREAK_KEY, JSON.stringify({ count: serverStreak.count, lastTimestamp: serverStreak.lastTimestamp }));
+          localStorage.setItem(`${STREAK_KEY}_${userId}`, JSON.stringify({ count: serverStreak.count, lastTimestamp: serverStreak.lastTimestamp }));
         }
       })
       .catch(err => console.error('Streak sync error:', err));
-  }, []);
+  }, [userId]);
 
   // Persistence & Expiry Check
   useEffect(() => {
@@ -70,7 +70,7 @@ export const VigilStreak: React.FC = () => {
       if (streak.lastTimestamp > 0 && !isSameDay(now, streak.lastTimestamp) && !isYesterday(streak.lastTimestamp, now)) {
         const resetData = { count: 0, lastTimestamp: 0 };
         setStreak(resetData);
-        localStorage.setItem(STREAK_KEY, JSON.stringify(resetData));
+        localStorage.setItem(`${STREAK_KEY}_${userId}`, JSON.stringify(resetData));
       }
 
       // Danger zone: 20 hours have passed since last interaction AND we haven't checked in today
@@ -83,7 +83,7 @@ export const VigilStreak: React.FC = () => {
     checkExpiry();
 
     return () => clearInterval(interval);
-  }, [streak.lastTimestamp]);
+  }, [streak.lastTimestamp, userId]);
 
   const playSound = (url: string) => {
     if (audioRef.current) {
@@ -107,13 +107,13 @@ export const VigilStreak: React.FC = () => {
 
     const newData = { count: newCount, lastTimestamp: now };
     setStreak(newData);
-    localStorage.setItem(STREAK_KEY, JSON.stringify(newData));
+    localStorage.setItem(`${STREAK_KEY}_${userId}`, JSON.stringify(newData));
 
     // Push to server
     fetch('/api/user/streak/check-in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: 'me', count: newCount, timestamp: now })
+      body: JSON.stringify({ userId, count: newCount, timestamp: now })
     }).catch(err => console.error('Streak push error:', err));
 
     // Milestone Check

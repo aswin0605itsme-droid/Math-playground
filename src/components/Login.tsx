@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, User, Mail, Lock, LogIn, UserPlus, AlertCircle, Loader2 } from 'lucide-react';
+import { Shield, User, Mail, Lock, LogIn, UserPlus, AlertCircle, Loader2, WifiOff } from 'lucide-react';
 import { authService, UserProfile } from '../services/authService';
 import { isFirebaseConfigured } from '../utils/firebase';
 
@@ -36,6 +36,19 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOfflineMode = () => {
+    // Create a mock profile for offline mode
+    const offlineProfile: UserProfile = {
+      uid: 'offline-user-' + Date.now(),
+      email: 'offline@local',
+      displayName: 'Offline User',
+      role: role,
+      createdAt: Date.now(),
+      lastLogin: Date.now()
+    };
+    onSuccess(offlineProfile);
   };
 
   return (
@@ -169,6 +182,17 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
               {isLogin ? 'Sign In' : 'Create Account'}
             </button>
           </form>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleOfflineMode}
+              className="w-full font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10"
+            >
+              <WifiOff size={20} />
+              Continue Offline
+            </button>
+          </div>
 
           <div className="mt-6 text-center">
             <button 

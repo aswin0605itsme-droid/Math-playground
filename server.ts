@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const db = new Database("community.db");
 const filter = new Filter();
 const JWT_SECRET = process.env.JWT_SECRET || "guardian-vault-secret-key";
-const ARCHITECT_TOKEN = process.env.ARCHITECT_TOKEN || "divine-architect-praveen-2024";
+const ARCHITECT_TOKEN = process.env.ARCHITECT_TOKEN || "divine-architect-praveen-20";
 
 // Vigil Engine: Autonomous Intelligence
 class VigilEngine {
@@ -287,7 +287,7 @@ async function startServer() {
     
     try {
       const { GoogleGenAI, Type } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -380,7 +380,7 @@ async function startServer() {
         (async () => {
           try {
             const { GoogleGenAI, Type } = await import("@google/genai");
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const ai = new GoogleGenAI({ apiKey: process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
             
             const response = await ai.models.generateContent({
               model: "gemini-3-flash-preview",

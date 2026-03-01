@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { SettingsManager } from './utils/settings';
 import { VigilStreak } from './components/VigilStreak';
+import { FirestoreStatus } from './components/FirestoreStatus';
 import { Login } from './components/Login';
 import { authService, UserProfile } from './services/authService';
 
@@ -79,6 +80,7 @@ header.innerHTML = `
     <div id="architectTrigger" class="text-xs text-slate-500 font-mono hidden md:block cursor-pointer select-none">v1.1.0 • Scientific Mode</div>
   </div>
   <div class="flex items-center gap-2">
+    <div id="firestore-status-root"></div>
     <div id="streak-root"></div>
     <div class="w-px h-6 bg-white/10 mx-2"></div>
     <button id="undoBtn" class="p-2 text-slate-400 hover:text-cyan-400 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors" title="Undo">
@@ -476,6 +478,11 @@ function startApp(profile: UserProfile) {
   const streakRoot = document.getElementById('streak-root');
   if (streakRoot) {
     createRoot(streakRoot).render(React.createElement(VigilStreak, { userId: profile.uid }));
+  }
+  
+  const firestoreStatusRoot = document.getElementById('firestore-status-root');
+  if (firestoreStatusRoot) {
+    createRoot(firestoreStatusRoot).render(React.createElement(FirestoreStatus));
   }
 }
 

@@ -52,7 +52,7 @@ export const VigilStreak: React.FC<{ userId: string }> = ({ userId }) => {
   useEffect(() => {
     fetch(`/api/user/streak/${userId}`)
       .then(res => res.json())
-      .then(serverStreak => {
+      .then((serverStreak: any) => {
         if (serverStreak && serverStreak.count > streak.count) {
           setStreak({ count: serverStreak.count, lastTimestamp: serverStreak.lastTimestamp });
           localStorage.setItem(`${STREAK_KEY}_${userId}`, JSON.stringify({ count: serverStreak.count, lastTimestamp: serverStreak.lastTimestamp }));

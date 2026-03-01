@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { Database, WifiOff } from 'lucide-react';
+import { Database, WifiOff, ServerOff, RefreshCw } from 'lucide-react';
 
 export const FirestoreStatus: React.FC = () => {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -67,14 +67,13 @@ export const FirestoreStatus: React.FC = () => {
         className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-slate-900/50 border border-white/10" 
         title={`Firestore: ${status}`}
       >
-        <Database 
-          size={14} 
-          className={
-            status === 'connected' ? 'text-emerald-400' : 
-            status === 'connecting' ? 'text-yellow-400' : 
-            'text-red-400'
-          } 
-        />
+        {status === 'connected' ? (
+          <Database size={14} className="text-emerald-400" />
+        ) : status === 'connecting' ? (
+          <RefreshCw size={14} className="text-yellow-400 animate-spin" />
+        ) : (
+          <ServerOff size={14} className="text-red-400" />
+        )}
         <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 hidden md:block">
           {status}
         </span>

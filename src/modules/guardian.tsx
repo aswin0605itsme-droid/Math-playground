@@ -63,7 +63,7 @@ export const GuardianDashboard: React.FC<{ profile: UserProfile }> = ({ profile 
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as { logs: Log[], config: Config[], streaks: Streak[], activeUsers: ActiveUser[] };
         setLogs(data.logs);
         setConfig(data.config);
         setStreaks(data.streaks);

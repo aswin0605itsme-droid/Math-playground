@@ -44,9 +44,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
       uid: 'offline-user-' + Date.now(),
       email: 'offline@local',
       displayName: 'Offline User',
-      role: role,
-      createdAt: Date.now(),
-      lastLogin: Date.now()
+      role: role
     };
     onSuccess(offlineProfile);
   };

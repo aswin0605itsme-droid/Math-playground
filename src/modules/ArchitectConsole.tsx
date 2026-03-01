@@ -38,7 +38,7 @@ export const ArchitectConsole: React.FC = () => {
       });
       if (res.ok) {
         const json = await res.json();
-        setData(json);
+        setData(json as ArchitectData);
       } else {
         setIsAuthenticated(false);
         setTerminalOutput(prev => [...prev, 'ERROR: Divine Signature Expired or Invalid.']);
@@ -80,7 +80,7 @@ export const ArchitectConsole: React.FC = () => {
           },
           body: JSON.stringify({ prompt: cmd })
         });
-        const json = await res.json();
+        const json = await res.json() as { response: string };
         setTerminalOutput(prev => [...prev, json.response]);
       } catch (err) {
         setTerminalOutput(prev => [...prev, 'ERROR: Failed to communicate with Vigil Engine.']);

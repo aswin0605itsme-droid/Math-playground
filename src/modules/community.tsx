@@ -64,7 +64,7 @@ export const Community: React.FC<{ profile: UserProfile }> = ({ profile }) => {
     // Check if enabled
     fetch('/api/config')
       .then(res => res.json())
-      .then(config => {
+      .then((config: any[]) => {
         const communityEnabled = config.find((c: any) => c.key === 'community_enabled')?.value === 'true';
         setIsEnabled(communityEnabled);
       });

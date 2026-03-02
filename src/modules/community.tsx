@@ -37,6 +37,7 @@ const CHANNELS = [
   { id: 'resources', name: 'resource-share', icon: Share2, description: 'PDFs, notes, and study links' },
   { id: 'voice', name: 'voice-study-room', icon: Mic, description: 'Active audio study sessions' },
   { id: 'help', name: 'help-desk', icon: HelpCircle, description: 'Homework questions' },
+  { id: 'dm', name: 'direct-messages', icon: MessageSquare, description: 'Private conversations between users' },
 ];
 
 const MOCK_USERS: User[] = [

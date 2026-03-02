@@ -29,7 +29,7 @@ export function initMonty(container: HTMLElement, settings: SettingsManager) {
         </button>
       </div>
       
-      <div class="flex-1 relative bg-slate-950/50 rounded-xl border border-white/10 overflow-hidden shadow-inner flex flex-col items-center justify-center gap-8 backdrop-blur-sm">
+      <div class="flex-1 relative bg-slate-950/50 rounded-xl border border-white/10 overflow-y-auto shadow-inner flex flex-col items-center justify-center gap-8 backdrop-blur-sm">
         <div class="text-2xl font-mono font-bold text-cyan-400 animate-pulse" id="instruction">
           Choose a door to begin
         </div>

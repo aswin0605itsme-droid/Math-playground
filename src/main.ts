@@ -64,8 +64,8 @@ const nav = document.createElement('nav');
 const main = document.createElement('main');
 
 // Setup Layout
-app.className = 'flex h-screen space-bg radar-grid text-slate-100 font-mono overflow-hidden selection:bg-cyan-500/30 selection:text-cyan-200 transition-colors duration-300';
-nav.className = 'w-20 md:w-64 flex-shrink-0 border-r border-white/10 bg-slate-900/20 backdrop-blur-md flex flex-col items-center md:items-stretch py-6 gap-2 z-10';
+app.className = 'flex h-[100dvh] space-bg radar-grid text-slate-100 font-mono overflow-hidden selection:bg-cyan-500/30 selection:text-cyan-200 transition-colors duration-300';
+nav.className = 'w-20 md:w-64 flex-shrink-0 border-r border-white/10 bg-slate-900/20 backdrop-blur-md flex flex-col items-center md:items-stretch py-6 gap-2 z-10 overflow-y-auto';
 main.className = 'flex-1 relative overflow-hidden flex flex-col';
 
 app.appendChild(nav);
@@ -101,7 +101,7 @@ header.innerHTML = `
 main.appendChild(header);
 
 const contentContainer = document.createElement('div');
-contentContainer.className = 'flex-1 relative overflow-hidden p-4 md:p-6';
+contentContainer.className = 'flex-1 relative overflow-y-auto p-4 md:p-6';
 main.appendChild(contentContainer);
 
 // Settings Modal

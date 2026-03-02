@@ -19,7 +19,7 @@ export function initPrimes(container: HTMLElement, settings: SettingsManager) {
         </div>
       </div>
       
-      <div class="flex-1 relative bg-slate-900/80 rounded-xl border border-white/10 overflow-hidden shadow-inner p-4 flex items-start justify-center overflow-auto dark:bg-slate-900/80 bg-slate-950 border-slate-800 dark:border-white/10">
+      <div class="flex-1 relative bg-slate-900/80 rounded-xl border border-white/10 shadow-inner p-4 flex items-start justify-center overflow-auto dark:bg-slate-900/80 bg-slate-950 border-slate-800 dark:border-white/10">
         <!-- Starfield Background -->
         <div class="absolute inset-0 pointer-events-none opacity-30" style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px;"></div>
         
